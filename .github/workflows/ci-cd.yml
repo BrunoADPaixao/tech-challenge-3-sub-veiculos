@@ -1,13 +1,11 @@
-name: CI/CD - Build and Push Docker Images
+name: CI/CD - Build, Push, and Deploy
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
 jobs:
-  build_and_push_images:
+  build_push_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository code
@@ -27,7 +25,7 @@ jobs:
         with:
           context: ./auth-service
           file: ./auth-service/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/auth-service:latest
 
       - name: Build and push vehicle-service image
@@ -35,5 +33,24 @@ jobs:
         with:
           context: ./vehicle-service
           file: ./vehicle-service/Dockerfile
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/vehicle-service:latest
+
+      - name: Deploy to EC2 Instance
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: |
+            # Navega até a pasta do projeto no servidor
+            cd /home/ubuntu/revenda-veiculos
+
+            # Puxa as imagens mais recentes do Docker Hub
+            docker compose pull
+
+            # Reinicia os serviços com as novas imagens
+            docker compose up -d
+
+            # Limpa imagens antigas não utilizadas
+            docker image prune -f
