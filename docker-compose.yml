@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  auth_db:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=auth_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+
+  vehicle_db:
+    image: postgres:14-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=vehicle_db
+    ports:
+      - '5433:5432'
+    volumes:
+      - vehicle_db_data:/var/lib/postgresql/data
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: "postgresql://user:password@auth_db:5432/auth_db?schema=public"
+      JWT_SECRET: "SEU_SEGREDO_SUPER_SECRETO"
+    depends_on:
+      - auth_db
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             npm start"
+
+
+  vehicle-service:
+    build: ./vehicle-service
+    ports:
+      - "3002:3000"
+    environment:
+      DATABASE_URL: "postgresql://user:password@vehicle_db:5432/vehicle_db?schema=public"
+    depends_on:
+      - vehicle_db
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             npm start"
+
+volumes:
+  auth_db_data:
+  vehicle_db_data:

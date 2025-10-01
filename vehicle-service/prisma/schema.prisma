@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VehicleStatus {
+  FOR_SALE
+  SOLD
+}
+
+model Vehicle {
+  id        String   @id @default(uuid())
+  brand     String
+  model     String
+  year      Int
+  color     String
+  price     Float
+  status    VehicleStatus @default(FOR_SALE)
+  buyerId   String?  // ID do usuário que comprou o veículo
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
